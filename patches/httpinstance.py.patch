@@ -1,0 +1,24 @@
+--- httpinstance.py	2017-03-15 12:56:19.000000000 -0400
++++ httpinstance.py.jsh	2017-05-23 16:21:13.774557641 -0400
+@@ -355,9 +355,17 @@
+         name = 'Root Certs'
+         args = [paths.MODUTIL, '-dbdir', paths.HTTPD_ALIAS_DIR, '-force']
+ 
+-        result = ipautil.run(args + ['-list', name],
+-                             env={},
+-                             capture_output=True)
++        try:
++            result = ipautil.run(args + ['-list', name],
++                                 env={},
++                                 capture_output=True)
++        except ipautil.CalledProcessError as e:
++            if e.returncode == 29:  # ERROR: Module not found in database.
++                root_logger.debug(
++                    'Module %s not available, treating as disabled', name)
++                return False
++            raise
++
+         if 'Status: Enabled' in result.output:
+             ipautil.run(args + ['-disable', name], env={})
+             return True
+
